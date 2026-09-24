@@ -669,19 +669,38 @@ else:
 
 # ispc-v1.23.0
 ispc_dest_folder = dest_dir+'/ispc-v1.23.0-windows'
+ispc_zip = pathlib.Path(dest_dir + '/.packages/ispc-v1.23.0-windows.zip')
 if pathlib.Path(ispc_dest_folder).exists():
   print('=== ISPC v1.23.0 {0}, skipping setup'.format(ispc_dest_folder))
 else:
-  download_url('https://github.com/ispc/ispc/releases/download/v1.23.0/ispc-v1.23.0-windows.zip')
-  with zipfile.ZipFile(os.path.normpath(dest_dir+'/.packages/ispc-v1.23.0-windows.zip'), 'r') as zip_file:
-    zip_file.extractall(dest_dir)
-    print('+++ ISPC v1.23.0 installed at {0}'.format(ispc_dest_folder))
+  if ispc_zip.exists():
+    try:
+      with zipfile.ZipFile(ispc_zip, 'r') as zip_file:
+        zip_file.testzip()
+        print('+++ Existing ISPC package is valid, skipping download')
+    except zipfile.BadZipFile:
+      print("+++ Existing ISPC package is corrupted, deleting it")
+      ispc_zip.unlink()
+  if not ispc_zip.exists():
+    download_url('https://github.com/ispc/ispc/releases/download/v1.23.0/ispc-v1.23.0-windows.zip')
+  try:
+    with zipfile.ZipFile(os.path.normpath(dest_dir+'/.packages/ispc-v1.23.0-windows.zip'), 'r') as zip_file:
+      zip_file.testzip()
+      zip_file.extractall(dest_dir)
+      print('+++ ISPC v1.23.0 installed at {0}'.format(ispc_dest_folder))
+  except zipfile.BadZipFile:
+    print('+++ Downloaded ISPC package is corrupted')
+    print('+++ Delete the package and run make_devtools.py again')
+    if ispc_zip.exists():
+      ispc_zip.unlink()
+    raise
+  print('+++ ISPC v1.23.0 installed at {0}'.format(ispc_dest_folder))
 
 # FidelityFX-SDK-2.1.1
 fidelityfx_sdk_ver = '2.1.1'
 fidelityfx_sdk_dest_folder = dest_dir+'/FidelityFX-SDK-'+fidelityfx_sdk_ver
 if pathlib.Path(fidelityfx_sdk_dest_folder).exists():
-  print('=== FidelityFX SDK {1} found at {0}, skipping setup'.format(fidelityfx_sdk_dest_folder, fidelityfx_sdk_ver))
+  print('+++ FidelityFX SDK {1} found at {0}, skipping setup'.format(fidelityfx_sdk_dest_folder, fidelityfx_sdk_ver))
 else:
   fidelityfx_sdk_zip = 'FidelityFX-SDK-'+fidelityfx_sdk_ver+'.zip'
   download_url2('https://github.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/archive/refs/tags/v'+fidelityfx_sdk_ver+'.zip',
@@ -693,7 +712,7 @@ else:
 # nvapi-R610
 nvapi_dest_folder = dest_dir+'/nvapi-R610'
 if pathlib.Path(nvapi_dest_folder).exists():
-  print('=== nvapi symlink found at {0}, skipping setup'.format(nvapi_dest_folder))
+  print('+++ nvapi symlink found at {0}, skipping setup'.format(nvapi_dest_folder))
 else:
   download_url2('https://github.com/NVIDIA/nvapi/archive/refs/heads/main.zip', 'nvapi-R610.zip')
   with zipfile.ZipFile(os.path.normpath(dest_dir+'/.packages/nvapi-R610.zip'), 'r') as zip_file:
